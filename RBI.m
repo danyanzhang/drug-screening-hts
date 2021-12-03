@@ -39,7 +39,7 @@ elseif DA_xy > 0 & DA_xy <= 1
 elseif DA_xy > 0 & DA_xy > 1
     cat = 'antagonistic suppression';
 else
-    cat = 'Unknown'
+    cat = 'Unknown';
 end
 
 end % end of function

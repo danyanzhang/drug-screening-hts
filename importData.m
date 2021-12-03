@@ -1,4 +1,6 @@
 % go up to previous directory
-clear;clc;close all
+function data = importData()
 addpath(['..', filesep, 'DataDerived'])
 data = readtable('james_CL_invert.csv');
+rmpath(['..', filesep, 'DataDerived']);
+end

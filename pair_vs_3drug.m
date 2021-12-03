@@ -1,16 +1,14 @@
-
-function results = James2v3_2(j)
-figure
+function results = pair_vs_3drug(j)
 tiledlayout(1,2)
-cellLineCol = [12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48];
+cellLineCol = 5:17;
 
-data = readtable('james.csv');
-conc1 = data.x_MRX_2843__nM_;
-conc2 = data.x_Methotrexate__nM_;
-conc3 = data.x_Vincristine__nM_;
+% import datafile
+data = importData; % imports file james_CL_invert.csv
+conc1 = data.c1;
+conc2 = data.c2;
+conc3 = data.c3;
 
 idx3drug = find(conc1~=0 & conc2~=0 & conc3~=0);
-ratio = data.Ratio_(idx3drug);
 
 % This data is arranged such that no concentrations are 0
 % looking at all possible 3 drug combination sets
@@ -29,13 +27,14 @@ for i = 1:length(idx3drug) % for every 3 drug combination
     g23idx(i,1) = find(conc1==0 & conc2==conc2(idx3drug(i)) & conc3==conc3(idx3drug(i)));
 end
 
-g1 = 1-E(g1idx); % subtract from 1 to get effect (survival?)
-g2 = 1-E(g2idx);
-g3 = 1-E(g3idx);
-g12 = 1-E(g12idx);
-g13 = 1-E(g13idx);
-g23 = 1-E(g23idx);
-g123_actual = 1-E(idx3drug);
+% since this is from inverted dataset, don't need to subtract
+g1 = E(g1idx); % subtract from 1 to get effect (survival?)
+g2 = E(g2idx);
+g3 = E(g3idx);
+g12 = E(g12idx);
+g13 = E(g13idx);
+g23 = E(g23idx);
+g123_actual = E(idx3drug);
 
 % Application of models
 g123_wood = wood(g1,g2,g3,g12,g13,g23);
@@ -79,19 +78,70 @@ syn123 = syn123';
 
 % Plotting
 nexttile
-plot(g123_actual,g123_wood,'k.')
+plot(g123_actual,g123_wood,'b.', 'MarkerSize', 10)
+hold on
+plot(g123_actual, g123_bliss, 'r.', 'MarkerSize', 10)
 xlabel('Experimental')
 ylabel('Model Predicted')
 axis([0 1.1 0 1.1])
+refline([1,0])
+hold off
+legend({'Pairwise Model', 'Net Interaction'}, 'Location', 'Southeast')
 
 nexttile
 plot(g123_actual, g123_bliss, 'r.')
 xlabel('Experimental')
 ylabel('Model Predicted')
 axis([0 1.1 0 1.1])
+refline(1,0)
+
+
+% R2 results
+mdl_emergent = fitlm(g123_actual, g123_bliss);
+mdl_pairwise = fitlm(g123_actual, g123_wood);
+
+N = numel(g123_actual); % number of samples
+K_emergent = 3; % number of parameters in emergent model, g1, g2, g3
+K_pairwise = 6; % number of parameters in pairwise model, + g12, g23, g13
+
+R2_emergent = mdl_emergent.Rsquared.Ordinary;
+R2_emergent_adj = 1 - ((1-R2_emergent)*(N-1)/(N-K_emergent-1));
+
+R2_pairwise = mdl_pairwise.Rsquared.Ordinary;
+R2_pairwise_adj = 1 - ((1-R2_pairwise)*(N-1)/(N-K_pairwise-1));
+
+
+% custom R2 calculations
+residuals = g123_actual - g123_wood;
+
+meany = mean(g123_actual);
+error2 = (g123_actual - g123_bliss).^2;
+distmean2 = (g123_actual - meany).^2;
+
+sumsqerr = sum(error2);
+sumsqvar = sum(distmean2);
+R2_emer = 1 - sumsqerr/sumsqvar;
+R2_ermer_adj = 1 - ((1-R2_emer)*(N-1)/(N-3-1));
+
+error3 = (g123_actual - g123_wood).^2;
+distmean3 = (g123_actual - meany).^2;
+sumsqerr = sum(error3);
+sumsqvar = sum(distmean3);
+R2_pair = 1 - sumsqerr/sumsqvar;
+R2_pair_adj = 1 - ((1-R2_pair)*(N-1)/(N-6-1));
+
+
 
 % results table
-results = table(repmat(cellLineNum, length(idx3drug), 1), idx3drug, ratio, conc1(idx3drug), conc2(idx3drug), conc3(idx3drug), g1, g2, g3, g12, g13, g23, g123_actual, g123_bliss, g123_wood, DA, E3, DA12, DA13, DA23, syn12, syn13, syn23, syn123);
+results = table(repmat(cellLineNum, length(idx3drug), 1), idx3drug, ...
+    conc1(idx3drug), conc2(idx3drug), conc3(idx3drug), ...
+    g1, g2, g3, g12, g13, g23, g123_actual, g123_bliss, g123_wood, ...
+    DA, E3, DA12, DA13, DA23, syn12, syn13, syn23, syn123, residuals);
+
+results = renamevars(results,["Var1","Var3","Var4","Var5"], ...
+["cellLine","conc1","conc2","conc3"]);
+
+% CUSTOM FUNCTIONS ============================================================
 
 % Wood et al paper
 function g123 = wood(g1, g2, g3, g12, g13, g23)
