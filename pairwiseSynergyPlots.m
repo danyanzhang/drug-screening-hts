@@ -20,7 +20,7 @@
 
 clear;clc;close all
 
-%{
+
 lineage = 'B-ALL';
 
 switch lineage
@@ -33,9 +33,11 @@ case 'ETP-ALL'
 otherwise
     disp('Invalid lineage name')
 end
-%}
 
-cellLineIdx = 13;
+
+% to override the lineage switch case, uncomment the line below
+% and type in a number between 1-13 for specific cell line
+%cellLineIdx = 13;
 
 % calculate predicted viability and synergy scores
 for i = 1:numel(cellLineIdx)
