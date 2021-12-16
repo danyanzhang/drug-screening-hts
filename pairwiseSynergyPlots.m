@@ -21,7 +21,7 @@
 clear;clc;close all
 
 
-lineage = 'B-ALL';
+lineage = 'T+ETP-ALL';
 
 switch lineage
 case 'T-ALL'
@@ -30,6 +30,8 @@ case 'B-ALL'
     cellLineIdx = [4, 2, 1, 11, 7, 8, 5];
 case 'ETP-ALL'
     cellLineIdx = [13, 12];
+case 'T+ETP-ALL'
+    cellLineIdx = [3, 10, 9, 6, 13, 12];
 otherwise
     disp('Invalid lineage name')
 end
